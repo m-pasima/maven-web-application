@@ -1,0 +1,212 @@
+### **Steps for Dockerizing the Application:**
+
+1. **Create a Dockerfile**: This file will define the environment and steps to build the Docker image for the application.
+
+2. **Create a Jenkinsfile**: This file will define the Jenkins pipeline for CI/CD, including building the Docker image, pushing it to a container registry, and deploying it to Kubernetes.
+
+3. **Kubernetes Deployment Files**: These files will define the Kubernetes resources like Deployment and Service to deploy the application on a Kubernetes cluster.
+
+### **Step 1: Dockerize the Application**
+
+#### **1. Create a `Dockerfile`**
+
+In the root of your project (where the `pom.xml` is), create a `Dockerfile` to build the Docker image.
+
+```dockerfile
+# Use the official OpenJDK image to run the Java application
+FROM openjdk:11-jre-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the compiled WAR file from the target directory into the container
+COPY target/maven-web-application-0.0.1-SNAPSHOT.war /app/app.war
+
+# Expose the port that the app will run on
+EXPOSE 8080
+
+# Command to run the application
+ENTRYPOINT ["java", "-jar", "app.war"]
+```
+
+#### **2. Build the Docker Image**
+
+Run the following command to build the Docker image:
+
+```bash
+docker build -t your-docker-username/maven-web-application:latest .
+```
+
+This will create a Docker image named `your-docker-username/maven-web-application` with the `latest` tag.
+
+#### **3. Run the Docker Container**
+
+To run the container locally, use:
+
+```bash
+docker run -p 8080:8080 your-docker-username/maven-web-application:latest
+```
+
+This will run the application and expose it on `localhost:8080`.
+
+---
+
+### **Step 2: Create Kubernetes Deployment Files**
+
+Now, let’s create the Kubernetes deployment files to deploy the application.
+
+#### **1. Create a `deployment.yaml` file**
+
+This defines the Kubernetes deployment that will use the Docker image.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: maven-web-application
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: maven-web-application
+  template:
+    metadata:
+      labels:
+        app: maven-web-application
+    spec:
+      containers:
+        - name: maven-web-application
+          image: your-docker-username/maven-web-application:latest
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: maven-web-application-service
+spec:
+  selector:
+    app: maven-web-application
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
+```
+
+This YAML file:
+- Deploys 2 replicas of the `maven-web-application` container.
+- Exposes the app via a `LoadBalancer` service on port `80`, which will forward traffic to port `8080` of the application.
+
+#### **2. Apply the Deployment**
+
+Run the following commands to apply the Kubernetes deployment:
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+This will create the necessary Kubernetes resources for your application.
+
+---
+
+### **Step 3: Jenkins CI/CD Pipeline**
+
+Now, let’s automate the entire process with Jenkins by creating a Jenkins pipeline.
+
+#### **1. Create a `Jenkinsfile`**
+
+The `Jenkinsfile` will define the CI/CD pipeline. You’ll need Jenkins to be connected to a Docker registry (such as Docker Hub or Amazon ECR) and a Kubernetes cluster.
+
+Here’s a simple Jenkins pipeline using **Declarative Syntax**:
+
+
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'your-docker-username/maven-web-application'
+        REGISTRY = 'docker.io' // Use Docker Hub, update for ECR or another registry
+        K8S_NAMESPACE = 'default'
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Maven') {
+            steps {
+                script {
+                    // Clean and build the project
+                    sh 'mvn clean install'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Login to Docker and push the image
+                    sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Update Kubernetes deployment to use the new image
+                    sh "kubectl set image deployment/maven-web-application maven-web-application=${DOCKER_IMAGE}:${BUILD_NUMBER} --namespace=${K8S_NAMESPACE}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline successfully completed!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
+```
+
+#### **2. Create Jenkins Credentials**
+
+- **DOCKER_USERNAME** and **DOCKER_PASSWORD**: Store your Docker Hub credentials securely in Jenkins.
+- **K8S_NAMESPACE**: Ensure that your Jenkins server has access to the Kubernetes cluster and can run the `kubectl` commands.
+- **Kubernetes Access**: If you are deploying to a Kubernetes cluster (e.g., EKS or GKE), make sure you have the `kubeconfig` file set up in Jenkins.
+
+#### **3. Jenkins Pipeline Steps Breakdown**
+
+- **Clone Repo**: Checks out the latest code from the repository.
+- **Build Maven**: Runs `mvn clean install` to compile the Java application.
+- **Build Docker Image**: Builds the Docker image from the `Dockerfile`.
+- **Push Docker Image**: Logs in to Docker Hub and pushes the newly built image to the registry.
+- **Deploy to Kubernetes**: Deploys the new Docker image to Kubernetes using the `kubectl` command.
+
+---
+
+### **Conclusion**
+
+You can now apply  have the following setup for CI/CD Pipeline:
+1. **Dockerfile** to build the Docker image.
+2. **Kubernetes deployment YAML** to deploy your application.
+3. **Jenkinsfile** to automate the CI/CD pipeline, including building, pushing, and deploying to Kubernetes.
+
+Once the Jenkins pipeline runs, it will build the Docker image, push it to your registry, and deploy it to your Kubernetes cluster. 
