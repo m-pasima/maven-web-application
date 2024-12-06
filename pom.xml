@@ -16,6 +16,7 @@
         <spring.version>5.3.12</spring.version>
         <junit.version>5.7.2</junit.version>
         <log4j.version>1.2.17</log4j.version>
+        <sonar.projectKey>com.mt:maven-web-application</sonar.projectKey> <!-- Unique project key -->    
         <sonar.host.url>http://18.134.156.2:9000/</sonar.host.url> <!-- SonarQube Server URL -->
         <sonar.login>admin</sonar.login> <!-- SonarQube login (use token if available) -->
         <sonar.password>admin</sonar.password> <!-- Optional, use token instead -->
