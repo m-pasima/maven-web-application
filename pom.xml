@@ -12,23 +12,22 @@
 
     <properties>
         <jdk.version>1.8</jdk.version>
-        <spring.boot.version>2.5.4</spring.boot.version>  <!-- Make sure the version is specified correctly -->
+        <spring.boot.version>2.5.4</spring.boot.version>
         <spring.version>5.3.12</spring.version>
         <junit.version>5.7.2</junit.version>
         <log4j.version>1.2.17</log4j.version>
-        <sonar.host.url>http://18.134.156.2:9000/</sonar.host.url>
-        <sonar.login>admin</sonar.login>
-        <sonar.password>admin</sonar.password>
+        <sonar.host.url>http://18.134.156.2:9000/</sonar.host.url> <!-- SonarQube Server URL -->
+        <sonar.login>admin</sonar.login> <!-- SonarQube login (use token if available) -->
+        <sonar.password>admin</sonar.password> <!-- Optional, use token instead -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
-    <!-- Spring Boot Parent Section -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.4</version>  <!-- Use the explicit version here -->
-        <relativePath/> <!-- Lookup parent from repository -->
+        <version>2.5.4</version>
+        <relativePath/>
     </parent>
 
     <dependencies>
@@ -56,7 +55,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <version>2.5.4</version>  <!-- Explicit version for testing -->
+            <version>2.5.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -109,6 +108,20 @@
                     <wtpversion>2.0</wtpversion>
                     <wtpContextName>maven-web-application</wtpContextName>
                 </configuration>
+            </plugin>
+
+            <!-- SonarQube Maven Plugin for code quality analysis -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.9.1.2184</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>sonar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
